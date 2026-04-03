@@ -1,0 +1,122 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-paperclip}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-paperclip}
+      - POSTGRES_DB=${POSTGRES_DB:-paperclip}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paperclip -d paperclip"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+  openclaw:
+    image: registry.alpha5.finance/trade-system/openclaw:latest
+    network_mode: "service:ts-openclaw"
+    env_file:
+      - .env
+    environment:
+      - HOME=/home/node
+      - TERM=xterm-256color
+      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN-dc3bebda2f9452b3c52863869fdb03be4636ab543199e606}
+      - OPENCLAW_ALLOW_INSECURE_PRIVATE_WS=${OPENCLAW_ALLOW_INSECURE_PRIVATE_WS:-}
+      - OPENCLAW_EXTENSIONS=${OPENCLAW_EXTENSIONS:-}
+      - OPENCLAW_DOCKER_SOCKET=${OPENCLAW_DOCKER_SOCKET:-/var/run/docker.sock}
+      - OPENCLAW_DOCKER_APT_PACKAGES=${OPENCLAW_DOCKER_APT_PACKAGES:-}
+      - OLLAMA_HOST=${OLLAMA_HOST:-}
+      - LITELLM_API_KEY=${LITELLM_API_KEY:-}
+      - MCP_SERVER_URL=${MCP_SERVER_URL:-}
+      - MCP_API_KEY=${MCP_API_KEY:-}
+      - MCP_TIMEOUT_MS=${MCP_TIMEOUT_MS:-10000}
+    volumes:
+      - /data/services/openclaw/.openclaw:/home/node/.openclaw
+      #- ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
+      ## Uncomment the lines below to enable sandbox isolation
+      ## (agents.defaults.sandbox). Requires Docker CLI in the image
+      ## (build with --build-arg OPENCLAW_INSTALL_DOCKER_CLI=1) or use
+      ## docker-setup.sh with OPENCLAW_SANDBOX=1 for automated setup.
+      ## Set DOCKER_GID to the host's docker group GID (run: stat -c '%g' /var/run/docker.sock).
+      #- /var/run/docker.sock:/var/run/docker.sock
+      #group_add:
+      # - "${DOCKER_GID:-999}"
+    #init: true
+    restart: unless-stopped
+    depends_on:
+      - ts-openclaw
+    command:
+      [
+        "node",
+        "dist/index.js",
+        "gateway",
+        "--bind",
+        "${OPENCLAW_GATEWAY_BIND:-loopback}",
+        "--port",
+        "18789",
+      ]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:18789/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  hermes:
+    image: nousresearch/hermes-agent:latest
+    restart: unless-stopped
+    network_mode: "service:ts-openclaw"
+    env_file:
+      - .env
+    command: gateway run
+    volumes:
+      - ~/.hermes:/opt/data
+    # Uncomment to forward specific env vars instead of using .env file:
+    # environment:
+    #   - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    #   - OPENAI_API_KEY=${OPENAI_API_KEY}
+    #   - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+    depends_on:
+      - ts-openclaw
+
+  ts-openclaw:
+    image: tailscale/tailscale:latest
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY:-} # Generate a reusable auth key in your Tailscale admin console
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=true
+    volumes:
+      - /data/services/tailscale/state:/var/lib/tailscale
+    restart: unless-stopped
+
+  paperclip:
+    image: registry.alpha5.finance/trade-system/paperclip:latest
+    restart: unless-stopped
+    network_mode: "service:ts-openclaw"
+    env_file:
+      - .env
+    ports:
+      - "3100:8000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-}
+      - HOST=127.0.0.1
+      - PORT=${PORT:-3100}
+      - SERVE_UI=${SERVE_UI:-true}
+      - PAPERCLIP_DEPLOYMENT_MODE=${PAPERCLIP_DEPLOYMENT_MODE:-authenticated}
+      - PAPERCLIP_DEPLOYMENT_EXPOSURE${PAPERCLIP_DEPLOYMENT_EXPOSURE:-private}
+      - PAPERCLIP_PUBLIC_URL=${PAPERCLIP_PUBLIC_URL:-http://127.0.0.1:3100}
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-}
+      - PAPERCLIP_AGENT_JWT_SECRET=${PAPERCLIP_AGENT_JWT_SECRET:-}
+    volumes:
+      - /data/services/paperclip/data:/paperclip
+    depends_on:
+      - db
+      - ts-openclaw

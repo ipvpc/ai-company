@@ -1,0 +1,25 @@
+[milvus]
+uri = "http://milvus.alpha5.finance:19530"
+token = "root:Milvus"
+collection = "memsearch_chunks"
+
+[embedding]
+provider = "ollama"
+model = "nomic-embed-text"
+batch_size = 0
+base_url = "http://ollama.alpha5.finance:11434"
+api_key = ""
+
+[compact]
+llm_provider = "ollama"
+llm_model = "llama3.2"
+prompt_file = ""
+base_url = "http://ollama.alpha5.finance:11434"
+api_key = ""
+
+[chunking]
+max_chunk_size = 1500
+overlap_lines = 2
+
+[watch]
+debounce_ms = 1500

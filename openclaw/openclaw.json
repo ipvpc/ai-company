@@ -1,0 +1,283 @@
+{
+    "meta": {
+      "lastTouchedVersion": "2026.3.31",
+      "lastTouchedAt": "2026-04-01T12:59:21.803Z"
+    },
+    "wizard": {
+      "lastRunAt": "2026-03-27T20:34:29.201Z",
+      "lastRunVersion": "2026.3.8",
+      "lastRunCommand": "configure",
+      "lastRunMode": "local"
+    },
+    "browser": {
+      "defaultProfile": "openclaw"
+    },
+    "auth": {
+      "profiles": {
+        "litellm:default": {
+          "provider": "litellm",
+          "mode": "api_key"
+        }
+      }
+    },
+    "models": {
+      "mode": "merge",
+      "providers": {
+        "litellm": {
+          "baseUrl": "http://192.168.0.21:4000",
+          "apiKey": "${LITELLM_API_KEY}",
+          "api": "openai-completions",
+          "models": [
+            {
+              "id": "gpt-5-nano",
+              "name": "openAI GPT 5 Nano",
+              "api": "openai-completions",
+              "reasoning": true,
+              "input": [
+                "text",
+                "image"
+              ],
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0
+              },
+              "contextWindow": 128000,
+              "maxTokens": 8192
+            },
+            {
+              "id": "claude-opus-4-6",
+              "name": "Claude Opus 4.6",
+              "api": "openai-completions",
+              "reasoning": true,
+              "input": [
+                "text",
+                "image"
+              ],
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0
+              },
+              "contextWindow": 128000,
+              "maxTokens": 8192
+            }
+          ]
+        }
+      }
+    },
+    "agents": {
+      "defaults": {
+        "model": {
+          "primary": "openai/gpt-5-nano",
+          "fallbacks": [
+            "anthropic/claude-opus-4-6",
+            "opwnai/gpt-5-chat-latest"
+          ]
+        },
+        "models": {
+          "openai/gpt-5-nano": {},
+          "anthropic/claude-opus-4-6": {},
+          "openai/gpt-5-chat-latest": {
+            "alias": "LiteLLM"
+          }
+        },
+        "workspace": "/home/node/.openclaw/workspace",
+        "memorySearch": {
+          "enabled": true,
+          "provider": "ollama",
+          "model": "llama-3.2",
+          "sync": {
+            "watch": true,
+            "watchDebounceMs": 1500
+          },
+          "query": {
+            "maxResults": 8,
+            "hybrid": {
+              "enabled": true,
+              "vectorWeight": 0.7,
+              "textWeight": 0.3,
+              "candidateMultiplier": 4,
+              "mmr": {
+                "enabled": true,
+                "lambda": 0.7
+              },
+              "temporalDecay": {
+                "enabled": true,
+                "halfLifeDays": 30
+              }
+            }
+          },
+          "cache": {
+            "enabled": true,
+            "maxEntries": 50000
+          }
+        },
+        "compaction": {
+          "mode": "safeguard",
+          "reserveTokensFloor": 20000,
+          "memoryFlush": {
+            "enabled": true,
+            "softThresholdTokens": 4000,
+            "prompt": "Write any lasting notes to memory/YYYY-MM-DD.md; reply with NO_REPLY if nothing to store.",
+            "systemPrompt": "Session nearing compaction. Store durable memories now."
+          }
+        },
+        "sandbox": {
+          "mode": "off"
+        }
+      },
+      "list": [
+        {
+          "id": "main",
+          "default": true,
+          "name": "Kim (Chief Investment Officer)",
+          "workspace": "/home/node/.openclaw/workspace",
+          "subagents": {
+            "allowAgents": [
+              "*"
+            ]
+          }
+        },
+        {
+          "id": "market-data",
+          "name": "Market Data Agent",
+          "workspace": "/home/node/.openclaw/workspace/agents/market-data"
+        },
+        {
+          "id": "signal-research",
+          "name": "Signal Research Agent",
+          "workspace": "/home/node/.openclaw/workspace/agents/signal-research"
+        },
+        {
+          "id": "risk-veto",
+          "name": "Risk Veto Agent",
+          "workspace": "/home/node/.openclaw/workspace/agents/risk-veto"
+        },
+        {
+          "id": "news-events",
+          "name": "News & Events Agent",
+          "workspace": "/home/node/.openclaw/workspace/agents/news-agent"
+        },
+        {
+          "id": "portfolio-construction",
+          "name": "Portfolio Construction Agent",
+          "workspace": "/home/node/.openclaw/workspace/agents/portfolio-construction"
+        },
+        {
+          "id": "compliance-audit",
+          "name": "Compliance & Reporting (SEC/FINRA)",
+          "workspace": "/home/node/.openclaw/workspace/agents/compliance"
+        }
+      ]
+    },
+    "tools": {
+      "profile": "full",
+      "allow": [
+        "*"
+      ],
+      "loopDetection": {
+        "enabled": true,
+        "historySize": 30,
+        "warningThreshold": 10,
+        "criticalThreshold": 20,
+        "globalCircuitBreakerThreshold": 30,
+        "detectors": {
+          "genericRepeat": true,
+          "knownPollNoProgress": true,
+          "pingPong": true
+        }
+      },
+      "exec": {
+        "security": "full"
+      }
+    },
+    "commands": {
+      "native": "auto",
+      "nativeSkills": "auto",
+      "restart": true,
+      "ownerDisplay": "raw"
+    },
+    "session": {
+      "dmScope": "per-channel-peer"
+    },
+    "channels": {
+      "telegram": {
+        "enabled": true,
+        "dmPolicy": "pairing",
+        "botToken": "${TELEGRAM_BOT_TOKEN}",
+        "groupPolicy": "allowlist",
+        "streaming": "partial"
+      }
+    },
+    "gateway": {
+      "port": 18789,
+      "mode": "local",
+      "bind": "loopback",
+      "controlUi": {
+        "allowedOrigins": [
+          "http://localhost:18789",
+          "http://127.0.0.1:18789",
+          "http://192.168.0.47:18789"
+        ]
+      },
+      "auth": {
+        "mode": "token",
+        "token": "${OPENCLAW_UI_TOKEN}"
+      },
+      "tailscale": {
+        "mode": "off",
+        "resetOnExit": false
+      }
+    },
+    "plugins": {
+      "allow": [
+        "telegram",
+        "acpx",
+        "composio",
+        "browser"
+      ],
+      "entries": {
+        "telegram": {
+          "enabled": true
+        },
+        "acpx": {
+          "enabled": true
+        },
+        "composio": {
+          "enabled": true,
+          "config": {
+            "consumerKey": "${COMPOSIO_CONSUMER_KEY}"
+          }
+        },
+        "browser": {
+          "enabled": true
+        }
+      },
+      "installs": {
+        "acpx": {
+          "source": "path",
+          "sourcePath": "/app/extensions/acpx",
+          "installPath": "/home/node/.openclaw/extensions/acpx",
+          "version": "2026.3.8-beta.1",
+          "installedAt": "2026-03-11T22:00:01.165Z"
+        },
+        "composio": {
+          "source": "npm",
+          "spec": "@composio/openclaw-plugin",
+          "installPath": "/home/node/.openclaw/extensions/composio",
+          "version": "0.0.8",
+          "resolvedName": "@composio/openclaw-plugin",
+          "resolvedVersion": "0.0.8",
+          "resolvedSpec": "@composio/openclaw-plugin@0.0.8",
+          "integrity": "sha512-8dlafa5tifbia5F8YH4eA7HYhBrGMG49XJivR/Jutd8eGqV+57NYH/InXyZWXrCP1oViwUAy61rA4fEscWHixQ==",
+          "shasum": "c892b3dde4bf0a598625373d0d063818eb8054ff",
+          "resolvedAt": "2026-03-26T17:53:13.583Z",
+          "installedAt": "2026-03-26T17:53:23.870Z"
+        }
+      }
+    }
+  }
+  
