@@ -115,7 +115,7 @@ services:
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-}
       - PAPERCLIP_AGENT_JWT_SECRET=${PAPERCLIP_AGENT_JWT_SECRET:-}
     volumes:
-      - /data/services/paperclip/data:/home/paperclip/workspace
+      - /data/services/paperclip:/home/paperclip
     depends_on:
       - db
       - ts-openclaw
