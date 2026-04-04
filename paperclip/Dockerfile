@@ -4,10 +4,18 @@ FROM node:current-bullseye
 RUN npm install -g pnpm@9.15.4
 RUN npm install --global --omit=dev @anthropic-ai/claude-code@latest @openai/codex@latest opencode-ai 
 
+ARG USER_UID=10001
+ARG USER_GID=10001
+
 RUN groupadd --gid 10001 paperclip \
   && useradd --create-home --shell /bin/bash --uid 10001 --gid 10001 paperclip \
   && mkdir -p /paperclip /home/paperclip /home/paperclip/.local/share/pnpm \
   && chown -R paperclip:paperclip /paperclip /home/paperclip
+
+RUN git clone https://github.com/paperclipai/paperclip.git && \
+    cd paperclip && \
+    pnpm install && \
+pnpm dev
 
 USER paperclip
 
@@ -19,7 +27,7 @@ ENV PATH=$PNPM_HOME:$PATH
 RUN pnpm config set global-bin-dir "$PNPM_HOME" \
   && pnpm install -g paperclipai
 
-  ENV NODE_ENV=production \
+ENV NODE_ENV=production \
   HOME=/home/paperclip \
   HOST=0.0.0.0 \
   PORT=3100 \
@@ -33,5 +41,5 @@ RUN pnpm config set global-bin-dir "$PNPM_HOME" \
   PAPERCLIP_DEPLOYMENT_EXPOSURE=private \
   OPENCODE_ALLOW_ALL_MODELS=true
 
-VOLUME ["/paperclip"]
+VOLUME ["/home/paperclip"]
 EXPOSE 3100
